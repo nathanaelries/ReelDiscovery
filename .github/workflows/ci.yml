@@ -6,8 +6,8 @@ on:
   pull_request:
 
 jobs:
-  core-linux:
-    name: Core engine (Linux)
+  linux:
+    name: Core + Web (Linux)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,6 +16,16 @@ jobs:
           dotnet-version: 8.0.x
       - name: Build cross-platform core
         run: dotnet build src/ReelDiscovery.Core/ReelDiscovery.Core.csproj -c Release
+      - name: Build web app
+        run: dotnet build src/ReelDiscovery.Web/ReelDiscovery.Web.csproj -c Release
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t reeldiscovery-web .
 
   solution-windows:
     name: Full solution (Windows)

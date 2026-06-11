@@ -1,0 +1,50 @@
+@page "/jobs"
+@inject GenerationJobService Jobs
+
+<PageTitle>ReelDiscovery - Jobs</PageTitle>
+
+<h1>Generation jobs</h1>
+
+@if (Jobs.All.Count == 0)
+{
+    <p class="muted">No jobs yet this session. <a href="/">Create a dataset</a> to get started.</p>
+}
+else
+{
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Job</th>
+                    <th>Topic</th>
+                    <th>Status</th>
+                    <th>Started (local)</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var job in Jobs.All)
+                {
+                    <tr>
+                        <td><code>@job.ShortId</code></td>
+                        <td>@job.Topic</td>
+                        <td>@job.Status</td>
+                        <td>@job.StartedUtc.ToLocalTime().ToString("g")</td>
+                        <td class="row">
+                            <a class="button" href="/generate/@job.Id">View</a>
+                            @if (job.Status is JobStatus.Completed or JobStatus.Cancelled)
+                            {
+                                <a class="button" href="/download/@job.Id">Download</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<p class="muted small">
+    Jobs are kept in memory; restarting the server clears this list, but generated
+    files remain on disk under the data folder.
+</p>

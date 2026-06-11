@@ -1,0 +1,110 @@
+@page "/characters"
+@inject WizardSession Session
+@inject NavigationManager Nav
+
+<PageTitle>ReelDiscovery - Characters</PageTitle>
+
+<h1>Review characters</h1>
+<p class="muted">
+    Adjust names, emails, roles, and organizations. Internal characters share the company domain;
+    external ones (opposing counsel, vendors, journalists) use their own domains.
+</p>
+
+@if (Session.State.Characters.Count == 0)
+{
+    <p class="error">No characters yet. <a href="/storylines">Go back to storylines</a> first.</p>
+}
+else
+{
+    <section class="card">
+        <label class="inline">
+            Company domain
+            <input @bind="Session.State.CompanyDomain" placeholder="company.com" />
+        </label>
+    </section>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>First</th>
+                    <th>Last</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Organization</th>
+                    <th>External</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var character in Session.State.Characters)
+                {
+                    <tr>
+                        <td><input @bind="character.FirstName" /></td>
+                        <td><input @bind="character.LastName" /></td>
+                        <td><input @bind="character.Email" /></td>
+                        <td><input @bind="character.Role" /></td>
+                        <td><input @bind="character.Organization" /></td>
+                        <td class="center"><input type="checkbox" @bind="character.IsExternal" /></td>
+                        <td><button class="danger" @onclick="() => Remove(character)">✕</button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="row">
+        <button @onclick="Add">+ Add character</button>
+        <button class="primary" @onclick="NextAsync" disabled="@_busy">Generate org themes →</button>
+    </div>
+}
+
+@if (_busy)
+{
+    <p class="status">⏳ @_statusMessage</p>
+}
+@if (_errorMessage is not null)
+{
+    <p class="error">@_errorMessage</p>
+}
+
+@code {
+    private bool _busy;
+    private string _statusMessage = "Working...";
+    private string? _errorMessage;
+
+    private void Remove(Character character) => Session.State.Characters.Remove(character);
+
+    private void Add() => Session.State.Characters.Add(new Character
+    {
+        FirstName = "New",
+        LastName = "Character",
+        Email = $"new.character@{(string.IsNullOrWhiteSpace(Session.State.CompanyDomain) ? "company.com" : Session.State.CompanyDomain)}"
+    });
+
+    private async Task NextAsync()
+    {
+        _busy = true;
+        _errorMessage = null;
+        _statusMessage = "Generating organization themes...";
+        StateHasChanged();
+        try
+        {
+            var progress = new Progress<string>(message =>
+            {
+                _statusMessage = message;
+                InvokeAsync(StateHasChanged);
+            });
+            await Session.GenerateThemesAsync(progress);
+            Nav.NavigateTo("/settings");
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Theme generation failed: {ex.Message}";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

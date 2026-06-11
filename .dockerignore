@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/publish/
+.git/
+.github/
+.vs/
+.vscode/
+data/
+*.md
+src/ReelDiscovery.App/

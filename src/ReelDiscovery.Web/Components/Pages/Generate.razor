@@ -1,0 +1,136 @@
+@page "/generate/{JobId:guid}"
+@implements IDisposable
+@inject GenerationJobService Jobs
+
+<PageTitle>ReelDiscovery - Generating</PageTitle>
+
+@if (_job is null)
+{
+    <h1>Job not found</h1>
+    <p class="error">No generation job with that id. <a href="/jobs">See all jobs</a>.</p>
+}
+else
+{
+    <h1>
+        @(_job.Status switch
+        {
+            JobStatus.Running => "Generating dataset...",
+            JobStatus.Completed => "Dataset complete",
+            JobStatus.Cancelled => "Generation cancelled",
+            _ => "Generation failed"
+        })
+    </h1>
+    <p class="muted">Topic: @_job.Topic · Job @_job.ShortId · Started @_job.StartedUtc.ToLocalTime()</p>
+
+    @if (_job.Status == JobStatus.Running)
+    {
+        <section class="card">
+            <div class="progress-track">
+                <div class="progress-fill" style="width: @(_job.Progress.OverallPercentage.ToString("0"))%"></div>
+            </div>
+            <p class="status">
+                @_job.Progress.CompletedEmails / @_job.Progress.TotalEmails emails
+                @if (_job.Progress.TotalAttachments > 0)
+                {
+                    <span> · @_job.Progress.CompletedAttachments / @_job.Progress.TotalAttachments attachments</span>
+                }
+                @if (_job.Progress.TotalImages > 0)
+                {
+                    <span> · @_job.Progress.CompletedImages / @_job.Progress.TotalImages images</span>
+                }
+            </p>
+            <p class="muted">@_job.Progress.CurrentOperation</p>
+            @if (_job.Progress.CurrentStoryline is not null)
+            {
+                <p class="muted small">Storyline: @_job.Progress.CurrentStoryline</p>
+            }
+            <button class="danger" @onclick="Cancel">Cancel</button>
+        </section>
+    }
+    else
+    {
+        @if (_job.Result is not null)
+        {
+            <section class="card">
+                <h2>Results</h2>
+                <table class="results">
+                    <tbody>
+                        <tr><td>Emails</td><td>@_job.Result.TotalEmailsGenerated</td></tr>
+                        <tr><td>Threads</td><td>@_job.Result.TotalThreadsGenerated</td></tr>
+                        <tr><td>Word documents</td><td>@_job.Result.WordDocumentsGenerated</td></tr>
+                        <tr><td>Excel spreadsheets</td><td>@_job.Result.ExcelDocumentsGenerated</td></tr>
+                        <tr><td>PowerPoint decks</td><td>@_job.Result.PowerPointDocumentsGenerated</td></tr>
+                        <tr><td>Images</td><td>@_job.Result.ImagesGenerated</td></tr>
+                        <tr><td>Calendar invites</td><td>@_job.Result.CalendarInvitesGenerated</td></tr>
+                        <tr><td>Voicemails</td><td>@_job.Result.VoicemailsGenerated</td></tr>
+                        <tr><td>Elapsed</td><td>@_job.Result.ElapsedTime.ToString(@"hh\:mm\:ss")</td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            @if (_job.Result.Errors.Count > 0)
+            {
+                <section class="card">
+                    <h2>Warnings (@_job.Result.Errors.Count)</h2>
+                    <ul>
+                        @foreach (var error in _job.Result.Errors)
+                        {
+                            <li class="error">@error</li>
+                        }
+                    </ul>
+                </section>
+            }
+        }
+
+        @if (_job.Error is not null)
+        {
+            <p class="error">@_job.Error</p>
+        }
+
+        <div class="row">
+            @if (_job.Status != JobStatus.Failed)
+            {
+                <a class="button primary" href="/download/@_job.Id">⬇ Download dataset (.zip)</a>
+            }
+            <a class="button" download="dataset.yaml" href="@YamlDataUrl">⬇ dataset.yaml</a>
+            <a class="button" href="/">+ New dataset</a>
+        </div>
+    }
+}
+
+@code {
+    [Parameter]
+    public Guid JobId { get; set; }
+
+    private GenerationJob? _job;
+
+    private string YamlDataUrl => _job is null
+        ? "#"
+        : "data:application/x-yaml;base64," +
+          Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(_job.DatasetYaml));
+
+    protected override void OnParametersSet()
+    {
+        if (_job is not null)
+        {
+            _job.Updated -= OnJobUpdated;
+        }
+        _job = Jobs.Get(JobId);
+        if (_job is not null)
+        {
+            _job.Updated += OnJobUpdated;
+        }
+    }
+
+    private void OnJobUpdated() => _ = InvokeAsync(StateHasChanged);
+
+    private void Cancel() => Jobs.Cancel(JobId);
+
+    public void Dispose()
+    {
+        if (_job is not null)
+        {
+            _job.Updated -= OnJobUpdated;
+        }
+    }
+}

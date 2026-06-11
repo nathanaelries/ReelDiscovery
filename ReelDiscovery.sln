@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReelDiscovery.Core", "src\R
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReelDiscovery.App", "src\ReelDiscovery.App\ReelDiscovery.App.csproj", "{C26432AB-A5CE-41AB-8219-8A317B8198DF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReelDiscovery.Web", "src\ReelDiscovery.Web\ReelDiscovery.Web.csproj", "{66983594-DAC2-43CA-AA49-0518C480DF9B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +45,18 @@ Global
 		{C26432AB-A5CE-41AB-8219-8A317B8198DF}.Release|x64.Build.0 = Release|Any CPU
 		{C26432AB-A5CE-41AB-8219-8A317B8198DF}.Release|x86.ActiveCfg = Release|Any CPU
 		{C26432AB-A5CE-41AB-8219-8A317B8198DF}.Release|x86.Build.0 = Release|Any CPU
+		{66983594-DAC2-43CA-AA49-0518C480DF9B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66983594-DAC2-43CA-AA49-0518C480DF9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66983594-DAC2-43CA-AA49-0518C480DF9B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{66983594-DAC2-43CA-AA49-0518C480DF9B}.Debug|x64.Build.0 = Debug|Any CPU
+		{66983594-DAC2-43CA-AA49-0518C480DF9B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{66983594-DAC2-43CA-AA49-0518C480DF9B}.Debug|x86.Build.0 = Debug|Any CPU
+		{66983594-DAC2-43CA-AA49-0518C480DF9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66983594-DAC2-43CA-AA49-0518C480DF9B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66983594-DAC2-43CA-AA49-0518C480DF9B}.Release|x64.ActiveCfg = Release|Any CPU
+		{66983594-DAC2-43CA-AA49-0518C480DF9B}.Release|x64.Build.0 = Release|Any CPU
+		{66983594-DAC2-43CA-AA49-0518C480DF9B}.Release|x86.ActiveCfg = Release|Any CPU
+		{66983594-DAC2-43CA-AA49-0518C480DF9B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -50,5 +64,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{96490674-05C6-4DBC-9E27-9E668ECC90E0} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{C26432AB-A5CE-41AB-8219-8A317B8198DF} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{66983594-DAC2-43CA-AA49-0518C480DF9B} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

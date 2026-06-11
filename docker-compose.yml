@@ -1,0 +1,13 @@
+services:
+  reeldiscovery:
+    build: .
+    image: reeldiscovery-web
+    ports:
+      - "8080:8080"
+    environment:
+      # Optional: pre-fill the API key for single-tenant deployments.
+      # Users can also paste a key in the browser; it is never persisted.
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    volumes:
+      - ./data:/data
+    restart: unless-stopped

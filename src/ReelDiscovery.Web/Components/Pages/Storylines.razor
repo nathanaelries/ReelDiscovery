@@ -1,0 +1,119 @@
+@page "/storylines"
+@inject WizardSession Session
+@inject NavigationManager Nav
+
+<PageTitle>ReelDiscovery - Storylines</PageTitle>
+
+<h1>Review storylines</h1>
+<p class="muted">
+    Edit titles and descriptions, remove storylines you don't want, or regenerate the whole set.
+    @if (Session.State.AISuggestedDateReasoning is not null)
+    {
+        <br /><em>AI date suggestion: @Session.State.AISuggestedDateReasoning</em>
+    }
+</p>
+
+@if (Session.State.Storylines.Count == 0)
+{
+    <p class="error">No storylines yet. <a href="/">Go back to setup</a> and generate some first.</p>
+}
+else
+{
+    @foreach (var storyline in Session.State.Storylines)
+    {
+        <section class="card">
+            <div class="row spread">
+                <input class="grow strong" @bind="storyline.Title" />
+                <button class="danger" @onclick="() => Remove(storyline)">Remove</button>
+            </div>
+            <textarea rows="3" @bind="storyline.Description"></textarea>
+            <div class="row">
+                <label class="inline">
+                    Suggested emails
+                    <input type="number" min="1" max="500" @bind="storyline.SuggestedEmailCount" />
+                </label>
+                <span class="muted small">@storyline.TimelineHint</span>
+            </div>
+        </section>
+    }
+
+    <div class="row">
+        <button @onclick="Add">+ Add storyline</button>
+        <button @onclick="RegenerateAsync" disabled="@_busy">↻ Regenerate all</button>
+        <button class="primary" @onclick="NextAsync" disabled="@_busy">Generate characters →</button>
+    </div>
+}
+
+@if (_busy)
+{
+    <p class="status">⏳ @_statusMessage</p>
+}
+@if (_errorMessage is not null)
+{
+    <p class="error">@_errorMessage</p>
+}
+
+@code {
+    private bool _busy;
+    private string _statusMessage = "Working...";
+    private string? _errorMessage;
+
+    private void Remove(Storyline storyline) => Session.State.Storylines.Remove(storyline);
+
+    private void Add() => Session.State.Storylines.Add(new Storyline
+    {
+        Title = "New storyline",
+        SuggestedEmailCount = 5
+    });
+
+    private async Task RegenerateAsync()
+    {
+        _busy = true;
+        _errorMessage = null;
+        _statusMessage = "Regenerating storylines...";
+        StateHasChanged();
+        try
+        {
+            var progress = new Progress<string>(message =>
+            {
+                _statusMessage = message;
+                InvokeAsync(StateHasChanged);
+            });
+            await Session.GenerateStorylinesAsync(progress);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Regeneration failed: {ex.Message}";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task NextAsync()
+    {
+        _busy = true;
+        _errorMessage = null;
+        _statusMessage = "Generating characters...";
+        StateHasChanged();
+        try
+        {
+            var progress = new Progress<string>(message =>
+            {
+                _statusMessage = message;
+                InvokeAsync(StateHasChanged);
+            });
+            await Session.GenerateCharactersAsync(progress);
+            Nav.NavigateTo("/characters");
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Character generation failed: {ex.Message}";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

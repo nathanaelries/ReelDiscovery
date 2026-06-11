@@ -3,6 +3,9 @@ bin/
 obj/
 publish/
 
+# Generated datasets (web UI default data root)
+data/
+
 # User-specific files
 *.user
 *.suo

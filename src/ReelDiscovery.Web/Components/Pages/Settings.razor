@@ -1,0 +1,173 @@
+@page "/settings"
+@inject WizardSession Session
+@inject DatasetYamlService Yaml
+@inject GenerationJobService Jobs
+@inject NavigationManager Nav
+
+<PageTitle>ReelDiscovery - Settings</PageTitle>
+
+<h1>Generation settings</h1>
+<p class="muted">
+    Configure the dataset with the form, or edit the YAML directly; the two views describe the
+    same dataset definition. The dataset.yaml is saved with every generated corpus so it can be reproduced.
+</p>
+
+<div class="split">
+    <div>
+        <section class="card">
+            <h2>Volume</h2>
+            <div class="form-grid">
+                <label>Total emails <input type="number" min="1" max="5000" @bind="Session.State.Config.TotalEmailCount" /></label>
+                <label>Parallel API calls <input type="number" min="1" max="10" @bind="Session.State.Config.ParallelThreads" /></label>
+            </div>
+            <label class="check"><input type="checkbox" @bind="Session.State.Config.OrganizeBySender" /> Organize output into per-sender folders</label>
+        </section>
+
+        <section class="card">
+            <h2>Date range</h2>
+            <label class="check">
+                <input type="checkbox" @bind="Session.State.Config.LetAISuggestDates" />
+                Let AI suggest the date range
+                @if (Session.State.AISuggestedStartDate.HasValue && Session.State.AISuggestedEndDate.HasValue)
+                {
+                    <span class="muted small">
+                        (suggested: @Session.State.AISuggestedStartDate.Value.ToShortDateString()
+                        - @Session.State.AISuggestedEndDate.Value.ToShortDateString())
+                    </span>
+                }
+            </label>
+            @if (!Session.State.Config.LetAISuggestDates)
+            {
+                <div class="form-grid">
+                    <label>Start <input type="date" @bind="Session.State.Config.StartDate" /></label>
+                    <label>End <input type="date" @bind="Session.State.Config.EndDate" /></label>
+                </div>
+            }
+        </section>
+
+        <section class="card">
+            <h2>Attachments</h2>
+            <div class="form-grid">
+                <label>Attachment % <input type="number" min="0" max="100" @bind="Session.State.Config.AttachmentPercentage" /></label>
+                <label>
+                    Complexity
+                    <select @bind="Session.State.Config.AttachmentComplexity">
+                        <option value="@AttachmentComplexity.Simple">Simple</option>
+                        <option value="@AttachmentComplexity.Detailed">Detailed</option>
+                    </select>
+                </label>
+            </div>
+            <div class="row">
+                <label class="check"><input type="checkbox" @bind="Session.State.Config.IncludeWord" /> Word (.docx)</label>
+                <label class="check"><input type="checkbox" @bind="Session.State.Config.IncludeExcel" /> Excel (.xlsx)</label>
+                <label class="check"><input type="checkbox" @bind="Session.State.Config.IncludePowerPoint" /> PowerPoint (.pptx)</label>
+            </div>
+            <label class="check"><input type="checkbox" @bind="Session.State.Config.EnableAttachmentChains" /> Document version chains (v1, v2_revised, FINAL...)</label>
+        </section>
+
+        <section class="card">
+            <h2>Extras</h2>
+            <div class="row">
+                <label class="check"><input type="checkbox" @bind="Session.State.Config.IncludeImages" /> AI images (DALL-E)</label>
+                <label class="inline">at <input type="number" min="0" max="100" @bind="Session.State.Config.ImagePercentage" /> %</label>
+            </div>
+            <div class="row">
+                <label class="check"><input type="checkbox" @bind="Session.State.Config.IncludeCalendarInvites" /> Calendar invites (.ics)</label>
+                <label class="inline">up to <input type="number" min="0" max="100" @bind="Session.State.Config.CalendarInvitePercentage" /> %</label>
+            </div>
+            <div class="row">
+                <label class="check"><input type="checkbox" @bind="Session.State.Config.IncludeVoicemails" /> Voicemails (TTS .mp3)</label>
+                <label class="inline">at <input type="number" min="0" max="100" @bind="Session.State.Config.VoicemailPercentage" /> %</label>
+            </div>
+        </section>
+    </div>
+
+    <div>
+        <section class="card">
+            <h2>dataset.yaml</h2>
+            <textarea class="yaml" rows="28" spellcheck="false" @bind="_yamlText"></textarea>
+            <div class="row">
+                <button @onclick="RefreshYaml">⟲ From form</button>
+                <button @onclick="ApplyYaml">⟶ Apply to form</button>
+                <a class="button" download="dataset.yaml" href="@YamlDataUrl">Download</a>
+                <label class="button file-button">
+                    Upload
+                    <InputFile OnChange="UploadYamlAsync" accept=".yaml,.yml" />
+                </label>
+            </div>
+            @if (_yamlMessage is not null)
+            {
+                <p class="@(_yamlError ? "error" : "ok")">@_yamlMessage</p>
+            }
+        </section>
+    </div>
+</div>
+
+<div class="row">
+    <button class="primary" @onclick="StartGeneration"
+            disabled="@(!Session.HasApiKey || Session.State.Storylines.Count == 0 || Session.State.Characters.Count == 0)">
+        ▶ Start generation
+    </button>
+    @if (!Session.HasApiKey)
+    {
+        <span class="error">Set an API key on the <a href="/">Setup</a> page first.</span>
+    }
+    else if (Session.State.Storylines.Count == 0 || Session.State.Characters.Count == 0)
+    {
+        <span class="error">Storylines and characters are required before generating.</span>
+    }
+</div>
+
+@code {
+    private string _yamlText = string.Empty;
+    private string? _yamlMessage;
+    private bool _yamlError;
+
+    private string YamlDataUrl =>
+        "data:application/x-yaml;base64," +
+        Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(_yamlText));
+
+    protected override void OnInitialized() => RefreshYaml();
+
+    private void RefreshYaml()
+    {
+        _yamlText = Yaml.Serialize(Session.State);
+        _yamlMessage = null;
+    }
+
+    private void ApplyYaml()
+    {
+        try
+        {
+            Yaml.ApplyYaml(_yamlText, Session.State);
+            _yamlError = false;
+            _yamlMessage = "✓ YAML applied to form";
+        }
+        catch (Exception ex)
+        {
+            _yamlError = true;
+            _yamlMessage = $"✗ Invalid YAML: {ex.Message}";
+        }
+    }
+
+    private async Task UploadYamlAsync(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            using var reader = new StreamReader(e.File.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024));
+            _yamlText = await reader.ReadToEndAsync();
+            ApplyYaml();
+        }
+        catch (Exception ex)
+        {
+            _yamlError = true;
+            _yamlMessage = $"✗ Upload failed: {ex.Message}";
+        }
+    }
+
+    private void StartGeneration()
+    {
+        var job = Jobs.Start(Session.State);
+        Nav.NavigateTo($"/generate/{job.Id}");
+    }
+}

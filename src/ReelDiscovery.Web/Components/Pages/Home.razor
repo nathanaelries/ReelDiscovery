@@ -1,0 +1,140 @@
+@page "/"
+@inject WizardSession Session
+@inject NavigationManager Nav
+
+<PageTitle>ReelDiscovery - Setup</PageTitle>
+
+<h1>Create a dataset</h1>
+<p class="muted">
+    Generate realistic, fictional corporate email datasets for e-discovery training,
+    testing, and demos. Start with an OpenAI key and a topic.
+</p>
+
+<section class="card">
+    <h2>OpenAI API</h2>
+    <div class="form-grid">
+        <label>
+            API key
+            <input type="password" @bind="Session.State.ApiKey" placeholder="sk-..." autocomplete="off" />
+        </label>
+        <label>
+            Text model
+            <select @bind="Session.State.SelectedModel">
+                @foreach (var model in Session.State.AvailableModelConfigs)
+                {
+                    <option value="@model.ModelId">@model.DisplayName</option>
+                }
+            </select>
+        </label>
+    </div>
+    <div class="row">
+        <button @onclick="TestConnectionAsync" disabled="@(_busy || !Session.HasApiKey)">Test connection</button>
+        @if (_connectionMessage is not null)
+        {
+            <span class="@(_connectionOk ? "ok" : "error")">@_connectionMessage</span>
+        }
+    </div>
+    <p class="muted small">
+        Your key stays in this browser session only. It is never written to disk or included in dataset files.
+    </p>
+</section>
+
+<section class="card">
+    <h2>Topic</h2>
+    <div class="form-grid">
+        <label>
+            Topic (movie, TV show, book, or business scenario)
+            <input @bind="Session.State.Topic" placeholder="e.g. The Office, Healthcare Company Merger" />
+        </label>
+        <label>
+            Storyline count
+            <input type="number" min="1" max="100" @bind="Session.State.StorylineCount" />
+        </label>
+    </div>
+    <label>
+        Additional instructions (optional)
+        <textarea rows="3" @bind="Session.State.AdditionalInstructions"
+                  placeholder="e.g. Focus on the accounting department; include a whistleblower subplot"></textarea>
+    </label>
+    <div class="row">
+        <label class="check"><input type="checkbox" @bind="Session.State.WantsDocuments" /> Document-friendly storylines</label>
+        <label class="check"><input type="checkbox" @bind="Session.State.WantsImages" /> Image-friendly storylines</label>
+        <label class="check"><input type="checkbox" @bind="Session.State.WantsVoicemails" /> Voicemail-friendly storylines</label>
+    </div>
+</section>
+
+<div class="row">
+    <button class="primary" @onclick="GenerateStorylinesAsync"
+            disabled="@(_busy || !Session.HasApiKey || string.IsNullOrWhiteSpace(Session.State.Topic))">
+        Generate storylines →
+    </button>
+    @if (Session.State.Storylines.Count > 0 && !_busy)
+    {
+        <a href="/storylines">Keep existing @Session.State.Storylines.Count storylines →</a>
+    }
+</div>
+
+@if (_busy)
+{
+    <p class="status">⏳ @_statusMessage</p>
+}
+@if (_errorMessage is not null)
+{
+    <p class="error">@_errorMessage</p>
+}
+
+@code {
+    private bool _busy;
+    private bool _connectionOk;
+    private string? _connectionMessage;
+    private string _statusMessage = "Working...";
+    private string? _errorMessage;
+
+    private async Task TestConnectionAsync()
+    {
+        _busy = true;
+        _connectionMessage = null;
+        _errorMessage = null;
+        StateHasChanged();
+        try
+        {
+            _connectionOk = await Session.TestConnectionAsync();
+            _connectionMessage = _connectionOk ? "✓ Connected" : "✗ Connection failed - check key and model";
+        }
+        catch (Exception ex)
+        {
+            _connectionOk = false;
+            _connectionMessage = $"✗ {ex.Message}";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task GenerateStorylinesAsync()
+    {
+        _busy = true;
+        _errorMessage = null;
+        _statusMessage = "Generating storylines...";
+        StateHasChanged();
+        try
+        {
+            var progress = new Progress<string>(message =>
+            {
+                _statusMessage = message;
+                InvokeAsync(StateHasChanged);
+            });
+            await Session.GenerateStorylinesAsync(progress);
+            Nav.NavigateTo("/storylines");
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Storyline generation failed: {ex.Message}";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}
