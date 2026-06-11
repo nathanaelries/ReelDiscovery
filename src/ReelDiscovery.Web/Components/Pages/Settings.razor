@@ -67,6 +67,13 @@
 
         <section class="card">
             <h2>Extras</h2>
+            @if (!Session.State.HasMediaProvider)
+            {
+                <p class="error small">
+                    Images and voicemails are generated with OpenAI (DALL-E / TTS). Add an OpenAI key
+                    on the <a href="/">Setup</a> page to enable them; they will be skipped otherwise.
+                </p>
+            }
             <div class="row">
                 <label class="check"><input type="checkbox" @bind="Session.State.Config.IncludeImages" /> AI images (DALL-E)</label>
                 <label class="inline">at <input type="number" min="0" max="100" @bind="Session.State.Config.ImagePercentage" /> %</label>

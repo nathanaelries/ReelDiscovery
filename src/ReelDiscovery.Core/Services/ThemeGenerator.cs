@@ -5,9 +5,9 @@ namespace ReelDiscovery.Services;
 
 public class ThemeGenerator
 {
-    private readonly OpenAIService _openAI;
+    private readonly ILlmProvider _openAI;
 
-    public ThemeGenerator(OpenAIService openAI)
+    public ThemeGenerator(ILlmProvider openAI)
     {
         _openAI = openAI;
     }

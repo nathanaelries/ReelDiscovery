@@ -6,7 +6,9 @@
 
 ---
 
-ReelDiscovery generates realistic corporate email datasets for e-discovery training, testing, and demonstration purposes. Using OpenAI's GPT models, it creates authentic-feeling email threads based on movies, TV shows, books, or custom business scenarios.
+ReelDiscovery generates realistic corporate email datasets for e-discovery training, testing, and demonstration purposes. It creates authentic-feeling email threads based on movies, TV shows, books, or custom business scenarios.
+
+**Model-agnostic**: bring your own LLM. OpenAI, Anthropic Claude, xAI Grok, Google Gemini, Meta Llama (via Groq), local models (Ollama, LM Studio, vLLM), or any OpenAI-compatible endpoint. AI images (DALL-E) and TTS voicemails currently require an OpenAI key and can be paired with any text provider.
 
 ## Features
 
@@ -45,12 +47,14 @@ ReelDiscovery generates realistic corporate email datasets for e-discovery train
 
 ## Requirements
 
-- An OpenAI API key with access to:
-  - GPT-4o or GPT-4o-mini (for text generation)
-  - DALL-E 3 (optional, for image generation)
-  - TTS (optional, for voicemails)
+- An API key for any supported text provider:
+  - **OpenAI** (GPT-4o family) - also unlocks images and voicemails
+  - **Anthropic** (Claude Opus / Sonnet / Haiku)
+  - **xAI** (Grok), **Google** (Gemini), **Groq** (Llama), or any OpenAI-compatible endpoint
+  - **Ollama / LM Studio** for local models, no key needed
+- Optional: an OpenAI key for DALL-E images and TTS voicemails (only provider with media support today)
 - **Web UI**: any OS with Docker, or any OS with the .NET 8 SDK
-- **Desktop app**: Windows 10/11 (64-bit)
+- **Desktop app**: Windows 10/11 (64-bit), OpenAI only for now
 
 ## Installation
 
@@ -88,7 +92,8 @@ Every dataset is described by a `dataset.yaml` file capturing the topic, storyli
 
 ```yaml
 version: 1
-model: gpt-4o-mini
+provider: Anthropic (Claude)
+model: claude-opus-4-8
 topic: The Office
 storylineCount: 10
 media:
@@ -207,7 +212,8 @@ ReelDiscovery includes **optional, opt-in** anonymous usage telemetry to help us
 - .NET 8.0 (cross-platform core engine)
 - ASP.NET Core / Blazor Server (web UI)
 - Windows Forms (desktop UI)
-- OpenAI API (GPT-4, DALL-E, TTS)
+- Pluggable LLM providers: OpenAI SDK (native + compatible endpoints) and the official Anthropic C# SDK
+- OpenAI DALL-E and TTS (images and voicemails)
 - MimeKit (email generation)
 - DocumentFormat.OpenXml (Office documents)
 - YamlDotNet (dataset definitions)

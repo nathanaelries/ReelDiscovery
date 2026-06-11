@@ -36,6 +36,8 @@ public class DatasetYamlService
     {
         return new DatasetDefinition
         {
+            Provider = state.ProviderName,
+            BaseUrl = state.ProviderBaseUrl,
             Model = state.SelectedModel,
             Topic = state.Topic,
             AdditionalInstructions = state.AdditionalInstructions,
@@ -102,6 +104,25 @@ public class DatasetYamlService
 
     public void ApplyTo(DatasetDefinition def, WizardState state)
     {
+        var preset = LlmProviderCatalog.FindByName(def.Provider);
+        if (preset != null)
+        {
+            state.ProviderName = preset.Name;
+            state.ProviderKind = preset.Kind;
+            state.ProviderBaseUrl = def.BaseUrl ?? preset.BaseUrl;
+            if (preset.Models.Count > 0)
+            {
+                state.AvailableModelConfigs = preset.Models.ToList();
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(def.Provider))
+        {
+            // Unknown provider name: treat as OpenAI-compatible with the given base URL
+            state.ProviderName = def.Provider;
+            state.ProviderKind = LlmProviderKind.OpenAICompatible;
+            state.ProviderBaseUrl = def.BaseUrl;
+        }
+
         state.SelectedModel = def.Model;
         state.Topic = def.Topic;
         state.AdditionalInstructions = def.AdditionalInstructions;

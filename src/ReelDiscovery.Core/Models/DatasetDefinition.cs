@@ -8,6 +8,8 @@ namespace ReelDiscovery.Models;
 public class DatasetDefinition
 {
     public int Version { get; set; } = 1;
+    public string Provider { get; set; } = "OpenAI";
+    public string? BaseUrl { get; set; }
     public string Model { get; set; } = "gpt-4o-mini";
     public string Topic { get; set; } = string.Empty;
     public string AdditionalInstructions { get; set; } = string.Empty;

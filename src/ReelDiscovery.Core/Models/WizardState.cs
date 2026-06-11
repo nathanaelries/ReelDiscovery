@@ -7,6 +7,17 @@ public class WizardState
     public string SelectedModel { get; set; } = "gpt-4o-mini";
     public bool ConnectionTested { get; set; }
 
+    // Provider selection (defaults to OpenAI for backward compatibility)
+    public LlmProviderKind ProviderKind { get; set; } = LlmProviderKind.OpenAI;
+    public string ProviderName { get; set; } = "OpenAI";
+    public string? ProviderBaseUrl { get; set; }
+
+    /// <summary>
+    /// Optional OpenAI key used only for media generation (DALL-E images, TTS voicemails)
+    /// when the text provider is not OpenAI. Images/voicemails are skipped without one.
+    /// </summary>
+    public string MediaApiKey { get; set; } = string.Empty;
+
     // Model Configurations
     public List<AIModelConfig> AvailableModelConfigs { get; set; } = AIModelConfig.GetDefaultModels();
     public AIModelConfig? SelectedModelConfig => AvailableModelConfigs.FirstOrDefault(m => m.ModelId == SelectedModel);
@@ -44,15 +55,54 @@ public class WizardState
     public List<EmailThread> GeneratedThreads { get; set; } = new();
     public GenerationResult? Result { get; set; }
 
-    // Helper to create OpenAI service with tracking
+    // Helper to create OpenAI service with tracking (legacy; prefer CreateTextProvider)
     public Services.OpenAIService CreateOpenAIService()
     {
         var modelConfig = SelectedModelConfig;
         if (modelConfig != null)
         {
-            return new Services.OpenAIService(ApiKey, modelConfig, UsageTracker);
+            return new Services.OpenAIService(ApiKey, modelConfig, UsageTracker, ProviderBaseUrl);
         }
-        return new Services.OpenAIService(ApiKey, SelectedModel);
+        return new Services.OpenAIService(ApiKey, SelectedModel, ProviderBaseUrl);
+    }
+
+    /// <summary>Creates the text-generation provider for the selected provider/model.</summary>
+    public Services.ILlmProvider CreateTextProvider()
+    {
+        var modelConfig = SelectedModelConfig
+            ?? new AIModelConfig { ModelId = SelectedModel, DisplayName = SelectedModel };
+
+        return ProviderKind switch
+        {
+            LlmProviderKind.Anthropic => new Services.AnthropicService(ApiKey, modelConfig, UsageTracker),
+            // OpenAI native and OpenAI-compatible endpoints share the same client
+            _ => new Services.OpenAIService(ApiKey, modelConfig, UsageTracker, ProviderBaseUrl)
+        };
+    }
+
+    /// <summary>Image generation (DALL-E); null when no OpenAI key is available.</summary>
+    public Services.IImageGenerationProvider? CreateImageProvider() => CreateMediaService();
+
+    /// <summary>TTS voicemail generation; null when no OpenAI key is available.</summary>
+    public Services.ISpeechGenerationProvider? CreateSpeechProvider() => CreateMediaService();
+
+    public bool HasMediaProvider =>
+        ProviderKind == LlmProviderKind.OpenAI
+            ? !string.IsNullOrWhiteSpace(ApiKey)
+            : !string.IsNullOrWhiteSpace(MediaApiKey);
+
+    private Services.OpenAIService? CreateMediaService()
+    {
+        if (ProviderKind == LlmProviderKind.OpenAI && !string.IsNullOrWhiteSpace(ApiKey))
+        {
+            return CreateOpenAIService();
+        }
+        if (!string.IsNullOrWhiteSpace(MediaApiKey))
+        {
+            // Model id is irrelevant for image/TTS calls; key targets api.openai.com
+            return new Services.OpenAIService(MediaApiKey, "gpt-4o-mini");
+        }
+        return null;
     }
 
     // Legacy - Available OpenAI models (for backward compatibility)

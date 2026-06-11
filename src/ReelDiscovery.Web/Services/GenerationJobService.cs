@@ -78,7 +78,10 @@ public class GenerationJobService
                 await File.WriteAllTextAsync(
                     Path.Combine(job.OutputFolder, "dataset.yaml"), job.DatasetYaml);
 
-                var generator = new EmailGenerator(state.CreateOpenAIService());
+                var generator = new EmailGenerator(
+                    state.CreateTextProvider(),
+                    state.CreateImageProvider(),
+                    state.CreateSpeechProvider());
                 var progress = new Progress<GenerationProgress>(p =>
                 {
                     // The generator mutates a shared instance; snapshot it.

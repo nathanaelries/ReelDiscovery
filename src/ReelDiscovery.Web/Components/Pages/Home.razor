@@ -7,26 +7,57 @@
 <h1>Create a dataset</h1>
 <p class="muted">
     Generate realistic, fictional corporate email datasets for e-discovery training,
-    testing, and demos. Start with an OpenAI key and a topic.
+    testing, and demos. Bring your own model: OpenAI, Anthropic Claude, xAI Grok,
+    Gemini, Llama, local models, or any OpenAI-compatible endpoint.
 </p>
 
 <section class="card">
-    <h2>OpenAI API</h2>
+    <h2>AI provider</h2>
     <div class="form-grid">
         <label>
-            API key
-            <input type="password" @bind="Session.State.ApiKey" placeholder="sk-..." autocomplete="off" />
+            Provider
+            <select @bind="SelectedProviderName">
+                @foreach (var preset in _providers)
+                {
+                    <option value="@preset.Name">@preset.Name</option>
+                }
+            </select>
         </label>
         <label>
-            Text model
-            <select @bind="Session.State.SelectedModel">
+            Model id
+            <input list="model-presets" @bind="Session.State.SelectedModel" placeholder="model id" />
+            <datalist id="model-presets">
                 @foreach (var model in Session.State.AvailableModelConfigs)
                 {
                     <option value="@model.ModelId">@model.DisplayName</option>
                 }
-            </select>
+            </datalist>
         </label>
     </div>
+    <div class="form-grid">
+        <label>
+            API key
+            <input type="password" @bind="Session.State.ApiKey" placeholder="@ApiKeyPlaceholder" autocomplete="off" />
+        </label>
+        @if (Session.State.ProviderKind == LlmProviderKind.OpenAICompatible)
+        {
+            <label>
+                Base URL
+                <input @bind="Session.State.ProviderBaseUrl" placeholder="https://api.example.com/v1" />
+            </label>
+        }
+    </div>
+    @if (Session.State.ProviderKind != LlmProviderKind.OpenAI)
+    {
+        <label>
+            OpenAI key for images &amp; voicemails (optional)
+            <input type="password" @bind="Session.State.MediaApiKey" placeholder="sk-... (DALL-E and TTS still run on OpenAI)" autocomplete="off" />
+        </label>
+    }
+    @if (CurrentPreset?.Notes is not null)
+    {
+        <p class="muted small">@CurrentPreset.Notes</p>
+    }
     <div class="row">
         <button @onclick="TestConnectionAsync" disabled="@(_busy || !Session.HasApiKey)">Test connection</button>
         @if (_connectionMessage is not null)
@@ -35,7 +66,7 @@
         }
     </div>
     <p class="muted small">
-        Your key stays in this browser session only. It is never written to disk or included in dataset files.
+        Keys stay in this browser session only. They are never written to disk or included in dataset files.
     </p>
 </section>
 
@@ -89,6 +120,32 @@
     private string? _connectionMessage;
     private string _statusMessage = "Working...";
     private string? _errorMessage;
+
+    private readonly List<LlmProviderPreset> _providers = LlmProviderCatalog.All;
+
+    private LlmProviderPreset? CurrentPreset =>
+        _providers.FirstOrDefault(p => p.Name == Session.State.ProviderName);
+
+    private string ApiKeyPlaceholder => Session.State.ProviderKind switch
+    {
+        LlmProviderKind.Anthropic => "sk-ant-...",
+        LlmProviderKind.OpenAI => "sk-...",
+        _ => "API key (leave empty for local endpoints)"
+    };
+
+    private string SelectedProviderName
+    {
+        get => Session.State.ProviderName;
+        set
+        {
+            var preset = _providers.FirstOrDefault(p => p.Name == value);
+            if (preset != null)
+            {
+                Session.ApplyProviderPreset(preset);
+                _connectionMessage = null;
+            }
+        }
+    }
 
     private async Task TestConnectionAsync()
     {

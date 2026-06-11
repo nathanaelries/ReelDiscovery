@@ -5,14 +5,14 @@ namespace ReelDiscovery.Services;
 
 public class CharacterGenerator
 {
-    private readonly OpenAIService _openAI;
+    private readonly ILlmProvider _openAI;
     private readonly Random _random = new();
 
     // Available TTS voices with characteristics
     private static readonly string[] MaleVoices = ["echo", "onyx", "fable"];
     private static readonly string[] FemaleVoices = ["nova", "shimmer", "alloy"];
 
-    public CharacterGenerator(OpenAIService openAI)
+    public CharacterGenerator(ILlmProvider openAI)
     {
         _openAI = openAI;
     }

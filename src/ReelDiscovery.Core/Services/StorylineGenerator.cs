@@ -5,10 +5,10 @@ namespace ReelDiscovery.Services;
 
 public class StorylineGenerator
 {
-    private readonly OpenAIService _openAI;
+    private readonly ILlmProvider _openAI;
     private const int MaxStorylinesPerBatch = 15;
 
-    public StorylineGenerator(OpenAIService openAI)
+    public StorylineGenerator(ILlmProvider openAI)
     {
         _openAI = openAI;
     }

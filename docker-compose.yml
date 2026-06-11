@@ -5,9 +5,14 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Optional: pre-fill the API key for single-tenant deployments.
+      # Optional: pre-fill API keys for single-tenant deployments.
       # Users can also paste a key in the browser; it is never persisted.
+      # The key matching the selected provider is used automatically.
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - XAI_API_KEY=${XAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
     volumes:
       - ./data:/data
     restart: unless-stopped

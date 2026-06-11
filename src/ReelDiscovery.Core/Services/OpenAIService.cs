@@ -9,7 +9,12 @@ using ReelDiscovery.Models;
 
 namespace ReelDiscovery.Services;
 
-public class OpenAIService
+/// <summary>
+/// OpenAI provider. With a custom base URL this also serves any
+/// OpenAI-compatible endpoint (xAI, Gemini, Groq, Ollama, vLLM, ...).
+/// The only provider that currently supports images (DALL-E) and TTS.
+/// </summary>
+public class OpenAIService : ILlmProvider, IImageGenerationProvider, ISpeechGenerationProvider
 {
     private readonly string _apiKey;
     private readonly string _model;
@@ -19,28 +24,36 @@ public class OpenAIService
     private readonly TokenUsageTracker? _usageTracker;
     private const int MaxRetries = 4;
 
-    private static OpenAIClient CreateClient(string apiKey)
+    public string ModelId => _model;
+
+    private static OpenAIClient CreateClient(string apiKey, string? baseUrl)
     {
         var options = new OpenAIClientOptions();
         options.NetworkTimeout = TimeSpan.FromMinutes(10);
-        return new OpenAIClient(new System.ClientModel.ApiKeyCredential(apiKey), options);
+        if (!string.IsNullOrWhiteSpace(baseUrl))
+        {
+            options.Endpoint = new Uri(baseUrl);
+        }
+        // Local endpoints (Ollama etc.) need no key, but the credential cannot be empty.
+        var key = string.IsNullOrWhiteSpace(apiKey) ? "not-needed" : apiKey;
+        return new OpenAIClient(new System.ClientModel.ApiKeyCredential(key), options);
     }
 
-    public OpenAIService(string apiKey, string model)
+    public OpenAIService(string apiKey, string model, string? baseUrl = null)
     {
         _apiKey = apiKey;
         _model = model;
-        _client = CreateClient(apiKey);
+        _client = CreateClient(apiKey, baseUrl);
         _chatClient = _client.GetChatClient(model);
     }
 
-    public OpenAIService(string apiKey, AIModelConfig modelConfig, TokenUsageTracker? usageTracker = null)
+    public OpenAIService(string apiKey, AIModelConfig modelConfig, TokenUsageTracker? usageTracker = null, string? baseUrl = null)
     {
         _apiKey = apiKey;
         _model = modelConfig.ModelId;
         _modelConfig = modelConfig;
         _usageTracker = usageTracker;
-        _client = CreateClient(apiKey);
+        _client = CreateClient(apiKey, baseUrl);
         _chatClient = _client.GetChatClient(modelConfig.ModelId);
     }
 

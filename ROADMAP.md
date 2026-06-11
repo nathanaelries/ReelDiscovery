@@ -10,8 +10,9 @@ The goal: the most realistic, most pathological e-discovery test corpora you can
 | B | Blazor Server web UI with background jobs, live progress, zip download | ✅ Done |
 | C | `dataset.yaml` definitions: form/YAML editing, export/import, saved with every corpus | ✅ Done (v1) |
 | D | Docker image + compose, CI on Linux and Windows | ✅ Done |
-| E | Headless CLI (`reeldiscovery generate -f dataset.yaml`) for CI pipelines | Planned |
-| F | Test project: round-trip generated output through MimeKit/OpenXML validators | Planned |
+| E | Model-agnostic providers: OpenAI, Anthropic Claude, xAI, Gemini, Groq/Llama, Ollama, custom OpenAI-compatible endpoints | ✅ Done |
+| F | Headless CLI (`reeldiscovery generate -f dataset.yaml`) for CI pipelines | Planned |
+| G | Test project: round-trip generated output through MimeKit/OpenXML validators | Planned |
 
 ## Content phases
 

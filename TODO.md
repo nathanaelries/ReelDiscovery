@@ -22,6 +22,13 @@ Near-term, actionable items. See [ROADMAP.md](ROADMAP.md) for the bigger picture
 - [ ] Make image (`dall-e-3`) and TTS (`tts-1`) model ids configurable instead of hardcoded in `OpenAIService`
 - [ ] Telemetry: make the webhook endpoint configurable; document it for self-hosted deployments
 
+## Providers (model-agnostic follow-ups)
+- [ ] Editable pricing for non-OpenAI/Anthropic models (xAI/Gemini/Groq presets currently track cost as $0)
+- [ ] Media providers beyond OpenAI: gpt-image-1, Gemini Imagen, ElevenLabs TTS behind `IImageGenerationProvider`/`ISpeechGenerationProvider`
+- [ ] WinForms desktop app: surface the provider dropdown (Core supports it; the desktop UI is still OpenAI-only)
+- [ ] Anthropic: consider adaptive thinking (`thinking: {type: adaptive}`) for storyline quality on Opus models
+- [ ] Graceful fallback when an OpenAI-compatible endpoint rejects `response_format: json_object` (retry without it)
+
 ## Housekeeping
 - [ ] Resolve license ambiguity once upstream responds to [issue #3](https://github.com/ghanderson77-ops/ReelDiscovery/issues/3); align LICENSE and README
 - [ ] Add CONTRIBUTING.md once the license question is settled

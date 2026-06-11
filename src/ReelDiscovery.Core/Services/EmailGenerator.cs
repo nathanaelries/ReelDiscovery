@@ -7,7 +7,9 @@ namespace ReelDiscovery.Services;
 
 public class EmailGenerator
 {
-    private readonly OpenAIService _openAI;
+    private readonly ILlmProvider _openAI;
+    private readonly IImageGenerationProvider? _imageProvider;
+    private readonly ISpeechGenerationProvider? _speechProvider;
     private readonly OfficeDocumentService _officeService;
     private readonly CalendarService _calendarService;
     private readonly Random _random = new();
@@ -18,9 +20,16 @@ public class EmailGenerator
     // Maximum emails per API call to avoid token limits and timeouts
     private const int MaxEmailsPerBatch = 15;
 
-    public EmailGenerator(OpenAIService openAI)
+    public EmailGenerator(
+        ILlmProvider openAI,
+        IImageGenerationProvider? imageProvider = null,
+        ISpeechGenerationProvider? speechProvider = null)
     {
         _openAI = openAI;
+        // Default to the text provider when it also supports media (the OpenAI case),
+        // so existing single-provider callers keep image/voicemail support.
+        _imageProvider = imageProvider ?? openAI as IImageGenerationProvider;
+        _speechProvider = speechProvider ?? openAI as ISpeechGenerationProvider;
         _officeService = new OfficeDocumentService();
         _calendarService = new CalendarService();
     }
@@ -1203,10 +1212,13 @@ Email body preview: {email.BodyPlain[..Math.Min(300, email.BodyPlain.Length)]}..
         if (!email.PlannedHasImage || string.IsNullOrEmpty(email.PlannedImageDescription))
             return;
 
-        // Generate the image using DALL-E with the planned description
+        // Generate the image with the planned description (requires a media-capable provider)
+        if (_imageProvider == null)
+            return;
+
         var imagePrompt = $"A vivid, realistic image in the style/universe of {state.Topic}: {email.PlannedImageDescription}. High quality, detailed.";
 
-        var imageBytes = await _openAI.GenerateImageAsync(imagePrompt, "Image Generation", ct);
+        var imageBytes = await _imageProvider.GenerateImageAsync(imagePrompt, "Image Generation", ct);
 
         if (imageBytes == null || imageBytes.Length == 0)
             return;
@@ -1320,8 +1332,11 @@ Respond with JSON:
         if (response == null || string.IsNullOrEmpty(response.VoicemailScript))
             return;
 
-        // Generate the audio using TTS
-        var audioBytes = await _openAI.GenerateSpeechAsync(
+        // Generate the audio using TTS (requires a media-capable provider)
+        if (_speechProvider == null)
+            return;
+
+        var audioBytes = await _speechProvider.GenerateSpeechAsync(
             response.VoicemailScript,
             email.From.VoiceId,
             "Voicemail TTS",
@@ -1666,11 +1681,14 @@ Respond with JSON:
         if (response == null || !response.ShouldIncludeImage || string.IsNullOrEmpty(response.ImageDescription))
             return;
 
-        // Generate the image using DALL-E
+        // Generate the image (requires a media-capable provider)
         // Craft a safe, descriptive prompt
+        if (_imageProvider == null)
+            return;
+
         var imagePrompt = $"A realistic image in the style of {state.Topic}: {response.ImageDescription}. High quality, photorealistic where appropriate.";
 
-        var imageBytes = await _openAI.GenerateImageAsync(imagePrompt, "Image Generation", ct);
+        var imageBytes = await _imageProvider.GenerateImageAsync(imagePrompt, "Image Generation", ct);
 
         if (imageBytes == null || imageBytes.Length == 0)
             return;
@@ -1886,8 +1904,11 @@ Respond with JSON:
         if (response == null || !response.ShouldCreateVoicemail || string.IsNullOrEmpty(response.VoicemailScript))
             return;
 
-        // Generate the audio using TTS
-        var audioBytes = await _openAI.GenerateSpeechAsync(
+        // Generate the audio using TTS (requires a media-capable provider)
+        if (_speechProvider == null)
+            return;
+
+        var audioBytes = await _speechProvider.GenerateSpeechAsync(
             response.VoicemailScript,
             email.From.VoiceId,
             "Voicemail TTS",
