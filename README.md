@@ -60,9 +60,13 @@ Download the latest `ReelDiscovery.exe` from the [Releases](../../releases) page
 ```bash
 git clone https://github.com/yourusername/ReelDiscovery.git
 cd ReelDiscovery
-dotnet build
-dotnet run
+dotnet build ReelDiscovery.sln
+dotnet run --project src/ReelDiscovery.App
 ```
+
+### Project Structure
+- `src/ReelDiscovery.Core` - cross-platform generation engine (net8.0): models, AI services, EML/Office/calendar generation
+- `src/ReelDiscovery.App` - Windows Forms desktop UI (net8.0-windows) referencing the core engine
 
 ## Quick Start
 
